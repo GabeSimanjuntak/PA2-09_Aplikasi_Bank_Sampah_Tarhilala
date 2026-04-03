@@ -1,48 +1,39 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\LibraryController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\LocationController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\RewardController;
+use App\Http\Controllers\Admin\SetoranController;
+use App\Http\Controllers\Admin\BillingController;
 
-Route::get('/', function () {
-    return view('admin.login');
-});
+// --- LOGIN ---
+Route::get('/', [AdminController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AdminController::class, 'login'])->name('login.post');
 
-Route::post('/login', function (Request $request) {
+Route::name('admin.')->group(function () {
 
-    $user = User::where('email', $request->email)->first();
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-    if (!$user) {
-        return back()->with('error', 'Email tidak ditemukan');
-    }
+    Route::get('/product', [ProductController::class, 'index'])->name('product.index');
 
-    if ($user->role != 'admin') {
-        return back()->with('error', 'Akses hanya untuk admin');
-    }
+    Route::get('/reward', [RewardController::class, 'index'])->name('reward.index');
 
-    if (!Hash::check($request->password, $user->password)) {
-        return back()->with('error', 'Password salah');
-    }
+    Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
 
-    session([
-        'admin_id' => $user->id,
-        'admin_nama' => $user->nama
-    ]);
+    Route::get('/setoran', [SetoranController::class, 'index'])->name('setoran.index');
 
-    return redirect('/dashboard');
-});
+    Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 
-Route::get('/dashboard', function () {
+    Route::get('/employee', [UserController::class, 'employeeIndex'])->name('employee.index');
 
-    if (!session('admin_id')) {
-        return redirect('/');
-    }
+    Route::get('/customers', [UserController::class, 'customerIndex'])->name('customers.index');
 
-    return view('admin.dashboard');
-});
+    Route::get('/location', [LocationController::class, 'index'])->name('location.index');
 
-Route::get('/logout', function () {
-    session()->flush();
-    return redirect('/');
+    Route::get('/logout', [AdminController::class, 'logout'])->name('logout');
+
 });
