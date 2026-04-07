@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
-class LoginPage extends StatefulWidget {
+class ResetPasswordPage extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _ResetPasswordPageState createState() => _ResetPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  TextEditingController email = TextEditingController();
-  TextEditingController password = TextEditingController();
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
+  TextEditingController pass1 = TextEditingController();
+  TextEditingController pass2 = TextEditingController();
 
   bool loading = false;
+  late String email;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    email = ModalRoute.of(context)!.settings.arguments as String;
+  }
 
   void showCustomSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -31,7 +38,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+        backgroundColor:
+            isError ? Colors.red.shade700 : Colors.green.shade700,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -44,35 +52,36 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void login() async {
-    if (email.text.isEmpty || password.text.isEmpty) {
-      showCustomSnackBar("Email dan password wajib diisi");
+  void resetPassword() async {
+    if (pass1.text.isEmpty || pass2.text.isEmpty) {
+      showCustomSnackBar("Password wajib diisi");
       return;
     }
 
-    if (!email.text.contains("@")) {
-      showCustomSnackBar("Format email tidak valid");
+    if (pass1.text.length < 6) {
+      showCustomSnackBar("Password minimal 6 karakter");
+      return;
+    }
+
+    if (pass1.text != pass2.text) {
+      showCustomSnackBar("Password tidak sama");
       return;
     }
 
     setState(() => loading = true);
 
-    var response = await AuthService.loginAdmin(email.text, password.text);
-
-    if (response['data'] == null) {
-      response = await AuthService.loginUser(email.text, password.text);
-    }
+    var response = await AuthService.resetPassword(email, pass1.text);
 
     setState(() => loading = false);
 
-    if (response['data'] != null) {
-      String role = response['data']['role'];
-      Navigator.pushReplacementNamed(
-        context,
-        role == 'admin' ? '/admin' : '/user',
-      );
+    if (response['success'] == true) {
+      showCustomSnackBar("Password berhasil direset", isError: false);
+
+      Future.delayed(Duration(milliseconds: 1500), () {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      });
     } else {
-      String message = response['message'] ?? "Login gagal";
+      String message = response['message'] ?? "Gagal reset password";
       if (response['errors'] != null) {
         message = response['errors'].toString();
       }
@@ -80,17 +89,18 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // 👇 Sudah tanpa suffixIcon (tanpa logo mata)
   Widget inputField(controller, hint, {bool obscure = false}) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
         color: Color(0xFFEDEDED),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -102,6 +112,10 @@ class _LoginPageState extends State<LoginPage> {
           hintStyle: TextStyle(color: Colors.grey),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          prefixIcon: Icon(
+            Icons.lock_outline,
+            color: Colors.grey.shade600,
+          ),
         ),
       ),
     );
@@ -117,7 +131,10 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             ClipPath(
               clipper: WaveClipper(),
-              child: Container(height: 210, color: Color(0xFF1F4F8C)),
+              child: Container(
+                height: 210,
+                color: Color(0xFF1F4F8C),
+              ),
             ),
 
             Transform.translate(
@@ -137,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 6),
 
                     Text(
-                      "Welcome!",
+                      "Reset Password",
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -147,30 +164,36 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 4),
 
                     Text(
-                      "Please Login to Your Account",
-                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                      "Create your new password",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF1F4F8C).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        email,
+                        style: TextStyle(
+                          color: Color(0xFF1F4F8C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
 
                     SizedBox(height: 25),
 
-                    inputField(email, "Enter Your Email"),
-                    inputField(password, "Enter Your Password", obscure: true),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/forgot');
-                        },
-                        child: Text(
-                          "Forgot Password?",
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
+                    inputField(pass1, "New Password", obscure: true),
+                    inputField(pass2, "Confirm New Password", obscure: true),
 
                     SizedBox(height: 10),
 
@@ -180,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
                             width: double.infinity,
                             height: 55,
                             child: ElevatedButton(
-                              onPressed: login,
+                              onPressed: resetPassword,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF1F4F8C),
                                 elevation: 6,
@@ -189,42 +212,32 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               child: Text(
-                                "Login",
+                                "Reset Password",
                                 style: TextStyle(
-                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
+                                  fontSize: 16,
                                 ),
                               ),
                             ),
                           ),
 
-                    SizedBox(height: 15),
+                    SizedBox(height: 10),
 
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/register');
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Don't Have a Account? ",
-                          style: TextStyle(color: Colors.black),
-                          children: [
-                            TextSpan(
-                              text: "Sign Up",
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        "Back to OTP Verification",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            )
           ],
         ),
       ),

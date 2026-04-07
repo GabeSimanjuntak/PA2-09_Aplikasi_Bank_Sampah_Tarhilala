@@ -30,7 +30,6 @@ class AdminAuthController extends Controller
             ], 401);
         }
 
-        // BUAT TOKEN
         $token = $user->createToken('admin-token')->plainTextToken;
 
         return response()->json([
