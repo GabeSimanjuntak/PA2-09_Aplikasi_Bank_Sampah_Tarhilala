@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
-class LoginPage extends StatefulWidget {
+class ForgotPasswordPage extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _ForgotPasswordPageState createState() => _ForgotPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  TextEditingController email = TextEditingController();
-  TextEditingController password = TextEditingController();
-
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  TextEditingController emailController = TextEditingController();
   bool loading = false;
 
   void showCustomSnackBar(String message, {bool isError = true}) {
@@ -44,43 +42,45 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void login() async {
-    if (email.text.isEmpty || password.text.isEmpty) {
-      showCustomSnackBar("Email dan password wajib diisi");
-      return;
-    }
-
-    if (!email.text.contains("@")) {
-      showCustomSnackBar("Format email tidak valid");
+  void sendOtp() async {
+    if (emailController.text.isEmpty || !emailController.text.contains("@")) {
+      showCustomSnackBar("Masukkan email yang valid");
       return;
     }
 
     setState(() => loading = true);
 
-    var response = await AuthService.loginAdmin(email.text, password.text);
+    try {
+      var response = await AuthService.sendOtp(emailController.text);
 
-    if (response['data'] == null) {
-      response = await AuthService.loginUser(email.text, password.text);
-    }
+      setState(() => loading = false);
 
-    setState(() => loading = false);
+      if (response['success'] == true) {
+        showCustomSnackBar("OTP berhasil dikirim", isError: false);
+        
+        Future.delayed(Duration(milliseconds: 1500), () {
+          Navigator.pushNamed(
+            context,
+            '/otp',
+            arguments: emailController.text,
+          );
+        });
+        return;
+      }
 
-    if (response['data'] != null) {
-      String role = response['data']['role'];
-      Navigator.pushReplacementNamed(
-        context,
-        role == 'admin' ? '/admin' : '/user',
-      );
-    } else {
-      String message = response['message'] ?? "Login gagal";
+      String message = response['message'] ?? "Email tidak ditemukan";
       if (response['errors'] != null) {
         message = response['errors'].toString();
       }
       showCustomSnackBar(message);
+      
+    } catch (e) {
+      setState(() => loading = false);
+      showCustomSnackBar("Email tidak terdaftar");
     }
   }
 
-  Widget inputField(controller, hint, {bool obscure = false}) {
+  Widget inputField(controller, hint) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -96,12 +96,13 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: TextField(
         controller: controller,
-        obscureText: obscure,
+        keyboardType: TextInputType.emailAddress,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
         ),
       ),
     );
@@ -117,7 +118,10 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             ClipPath(
               clipper: WaveClipper(),
-              child: Container(height: 210, color: Color(0xFF1F4F8C)),
+              child: Container(
+                height: 210,
+                color: Color(0xFF1F4F8C),
+              ),
             ),
 
             Transform.translate(
@@ -137,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 6),
 
                     Text(
-                      "Welcome!",
+                      "Forgot Password",
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -147,32 +151,16 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 4),
 
                     Text(
-                      "Please Login to Your Account",
-                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                      "Enter your email to receive an OTP",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
                     ),
 
                     SizedBox(height: 25),
 
-                    inputField(email, "Enter Your Email"),
-                    inputField(password, "Enter Your Password", obscure: true),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/forgot');
-                        },
-                        child: Text(
-                          "Forgot Password?",
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 10),
+                    inputField(emailController, "Enter Your Email"),
 
                     loading
                         ? CircularProgressIndicator()
@@ -180,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                             width: double.infinity,
                             height: 55,
                             child: ElevatedButton(
-                              onPressed: login,
+                              onPressed: sendOtp,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF1F4F8C),
                                 elevation: 6,
@@ -189,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               child: Text(
-                                "Login",
+                                "Send OTP",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -203,24 +191,17 @@ class _LoginPageState extends State<LoginPage> {
 
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/register');
+                        Navigator.pop(context);
                       },
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Don't Have a Account? ",
-                          style: TextStyle(color: Colors.black),
-                          children: [
-                            TextSpan(
-                              text: "Sign Up",
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      child: Text(
+                        "Back to Login",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
+
                   ],
                 ),
               ),

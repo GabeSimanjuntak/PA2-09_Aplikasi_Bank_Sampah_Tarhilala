@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendOtpMail;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class UserAuthController extends Controller
 {
@@ -50,6 +54,101 @@ class UserAuthController extends Controller
             'message' => 'Login berhasil',
             'token' => $token,
             'data' => $user
+        ]);
+    }
+
+        public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                "success" => false,
+                "message" => "Email tidak terdaftar",
+                "data"    => null
+            ], 404);
+        }
+
+        $otp = rand(100000, 999999);
+
+        \DB::table('password_resets')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'email' => $request->email,
+                'token' => $otp,
+                'created_at' => now()
+            ]
+        );
+
+        \Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
+
+        return response()->json([
+            "success" => true,
+            "message" => "Kode OTP telah dikirim ke email Anda",
+            "data" => [
+                "email" => $request->email
+            ]
+        ]);
+    }
+
+        public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required'
+        ]);
+
+        $check = \DB::table('password_resets')
+            ->where('email', $request->email)
+            ->where('token', $request->otp)
+            ->first();
+
+        if (!$check) {
+            return response()->json([
+                "success" => false,
+                "message" => "OTP salah",
+                "data"    => null
+            ], 400);
+        }
+
+        return response()->json([
+            "success" => true,
+            "message" => "OTP valid",
+            "data" => [
+                "email" => $request->email
+            ]
+        ]);
+    }
+
+        public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|min:6'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                "success" => false,
+                "message" => "Email tidak ditemukan",
+                "data" => null
+            ], 404);
+        }
+
+        $user->update([
+            'password' => bcrypt($request->password)
+        ]);
+
+        \DB::table('password_resets')->where('email', $request->email)->delete();
+
+        return response()->json([
+            "success" => true,
+            "message" => "Password berhasil direset",
+            "data" => null
         ]);
     }
 }
