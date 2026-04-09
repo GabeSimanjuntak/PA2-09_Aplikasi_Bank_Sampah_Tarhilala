@@ -77,14 +77,20 @@ class AuthService {
       "password": password,
     });
 
-    if (res["success"] == true && res["data"]?["token"] != null) {
+    if (res["success"] == true && res["data"] != null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString("token", res["data"]["token"]);
-      await prefs.setString("role", "nasabah");
+
+      var user = res["data"];
+
+      await prefs.setString("token", res["data"]["token"] ?? "");
+      await prefs.setString("role", user["role"] ?? "nasabah");
+
+      await prefs.setString("name", user["nama"] ?? "");
+      await prefs.setString("email", user["email"] ?? "");
     }
 
     return res;
-  }
+}
 
   // ===============================================================
   // 🔧 REGISTER
