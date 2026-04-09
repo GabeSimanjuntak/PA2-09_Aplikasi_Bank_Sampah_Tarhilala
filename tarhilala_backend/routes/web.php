@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\SetoranController;
 use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\MessageController;
 
 // --- LOGIN ---
 Route::get('/', [AdminController::class, 'showLoginForm'])->name('login');
@@ -59,6 +60,11 @@ Route::name('admin.')->group(function () {
     Route::post('/jadwal/store', [ScheduleController::class, 'store'])->name('jadwal.store');
     Route::put('/jadwal/update/{id}', [ScheduleController::class, 'update'])->name('jadwal.update');
     Route::delete('/jadwal/delete/{id}', [ScheduleController::class, 'destroy'])->name('jadwal.delete');
+
+    Route::get('/messages', [MessageController::class, 'index'])->name('message.index');
+    Route::get('/messages/{id}', [MessageController::class, 'show'])->name('message.show');
+    Route::post('/messages/{id}/send', [MessageController::class, 'store'])->name('message.store');
+    Route::patch('/messages/{id}/status', [MessageController::class, 'updateStatus'])->name('message.updateStatus');
 
     Route::get('/logout', [AdminController::class, 'logout'])->name('logout');
 

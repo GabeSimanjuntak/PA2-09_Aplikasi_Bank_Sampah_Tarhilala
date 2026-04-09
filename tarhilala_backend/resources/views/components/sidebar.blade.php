@@ -9,7 +9,7 @@
     @php
         $menus = [
             ['name' => 'Dashboard', 'icon' => 'fa-solid fa-table-cells-large', 'route' => 'admin.dashboard'],
-            ['name' => 'Message', 'icon' => 'fa-regular fa-comment-dots', 'route' => '#'],
+            ['name' => 'Message', 'icon' => 'fa-regular fa-comment-dots', 'route' => 'admin.message.index'],
             ['name' => 'Product', 'icon' => 'fa-solid fa-box-archive', 'route' => 'admin.product.index'],
             ['name' => 'Pick-Up', 'icon' => 'fa-solid fa-truck-pickup', 'route' => 'admin.setoran.index'],
             ['name' => 'Billing', 'icon' => 'fa-solid fa-file-invoice-dollar', 'route' => 'admin.billing.index'],
